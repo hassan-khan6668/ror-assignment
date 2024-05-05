@@ -61,50 +61,18 @@ class BlogsController < ApplicationController
     end
   end
 
-def import
-  file = params[:attachment]
-  batch_size = 1000 # Adjust the batch size as needed
-
-  # Open the uploaded file for reading
-  csv_file = file.tempfile
-
-  # Skip the header row
-  csv_file.readline
-
-  loop do
-    # Read a chunk of data from the file
-    chunk = []
-
-    batch_size.times do
-      line = csv_file.gets&.chomp
-      break if line.nil? || line.empty?
-
-      chunk << line
-    end
-
-    # Break if no more data
-    break if chunk.empty?
-
-    # Process the chunk
+  def import
+    file = params[:attachment]
+    data = CSV.parse(file.to_io, headers: true, encoding: 'utf8')
+    # Start code to handle CSV data
     ActiveRecord::Base.transaction do
-      chunk.each do |line|
-        # Split the line into title and body
-        title, body = line.split(',')
-
-        # Create a hash representing a blog entry
-        blog_attributes = { title: title, body: body }
-
-        # Create the blog entry
-        current_user.blogs.create!(blog_attributes)
+      data.each do |row|
+        current_user.blogs.create!(row.to_h)
       end
     end
+    # End code to handle CSV data
+    redirect_to blogs_path
   end
-
-  # Close the file
-  csv_file.close
-
-  redirect_to blogs_path
-end
 
   private
     # Use callbacks to share common setup or constraints between actions.
