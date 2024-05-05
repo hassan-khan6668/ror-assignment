@@ -62,26 +62,26 @@ class BlogsController < ApplicationController
   end
 
   def import
-    file = params[:attachment]
-    batch_size = 1000
-    csv_file = file.tempfile
-    csv_file.readline
+  file = params[:attachment]
+  batch_size = 1000
+  csv_file = file.tempfile
+  csv_file.readline
 
-    loop do
-      records = []
-      batch_size.times do
-        line = csv_file.gets&.chomp
-        break if line.nil? || line.empty?
-        records << line
+  loop do
+    records = []
+    batch_size.times do
+      line = csv_file.gets&.chomp
+      break if line.nil? || line.empty?
+      records << line
+    end
+    break if records.empty?
+    ActiveRecord::Base.transaction do
+      records.each do |line|
+        title, body = line.split(',')
+        blog_attributes = { title: title, body: body }
+        current_user.blogs.create!(blog_attributes)
       end
-      break if records.empty?
-      ActiveRecord::Base.transaction do
-        records.each do |line|
-          title, body = line.split(',')
-          blog_attributes = { title: title, body: body }
-          current_user.blogs.create!(blog_attributes)
-        end
-      end
+    end
   end
 
   private
